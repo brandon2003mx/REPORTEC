@@ -4,6 +4,7 @@ struct ChatView: View {
 
     @State private var numeroIncidencia = ""
     @State private var navegarAChat2 = false
+    @State private var navegarAMisReportes = false
     @State private var tipoSeleccionado = ""
     @State private var mostrarError = false
 
@@ -41,6 +42,20 @@ struct ChatView: View {
                                 .foregroundColor(.black.opacity(0.75))
                         }
                         Spacer()
+                        Button(action: { navegarAMisReportes = true }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "list.bullet.clipboard.fill")
+                                    .font(.system(size: 20))
+                                Text("Mis Reportes")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(Color.white)
+                            .cornerRadius(14)
+                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        }
                     }
                     .padding(.top, 25)
                     .padding(.horizontal, 20)
@@ -125,6 +140,9 @@ struct ChatView: View {
         }
         .navigationDestination(isPresented: $navegarAChat2) {
             ChatView2(tipoIncidencia: tipoSeleccionado)
+        }
+        .navigationDestination(isPresented: $navegarAMisReportes) {
+            MisReportesView()
         }
         .navigationBarBackButtonHidden(true)
     }
