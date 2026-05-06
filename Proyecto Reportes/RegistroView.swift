@@ -6,6 +6,11 @@ struct RegistroView: View {
     
     @State private var numeroControl = ""
     @State private var contrasena = ""
+    @State private var confirmarContrasena = ""
+    
+    @State private var mostrarAlerta = false
+    @State private var mensajeAlerta = ""
+    @State private var registroExitoso = false
     
     var body: some View {
         ZStack {
@@ -80,11 +85,22 @@ struct RegistroView: View {
                                 .background(Color.white)
                                 .cornerRadius(18)
                         }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Confirmar contraseña")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
+                            
+                            SecureField("Repite tu contraseña", text: $confirmarContrasena)
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(18)
+                        }
                     }
                     .padding(.horizontal, 25)
                     
                     Button {
-                        print("Registro: \(numeroControl), \(contrasena)")
+                        registrarUsuario()
                     } label: {
                         Text("Registrarme")
                             .font(.system(size: 18, weight: .bold))
@@ -106,6 +122,44 @@ struct RegistroView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .alert("Aviso", isPresented: $mostrarAlerta) {
+            Button("OK", role: .cancel) {
+                if registroExitoso {
+                    dismiss()
+                }
+            }
+        } message: {
+            Text(mensajeAlerta)
+        }
+    }
+    
+    func registrarUsuario() {
+        guard !numeroControl.isEmpty, !contrasena.isEmpty, !confirmarContrasena.isEmpty else {
+            mensajeAlerta = "Por favor llena todos los campos."
+            mostrarAlerta = true
+            return
+        }
+        
+        guard contrasena == confirmarContrasena else {
+            mensajeAlerta = "Las contraseñas no coinciden."
+            mostrarAlerta = true
+            return
+        }
+        
+        let exito = DatabaseManager.shared.registrarUsuario(
+            numeroControl: numeroControl,
+            contrasena: contrasena
+        )
+        
+        if exito {
+            mensajeAlerta = "Usuario registrado correctamente."
+            registroExitoso = true
+        } else {
+            mensajeAlerta = "No se pudo registrar. El número de control ya existe."
+            registroExitoso = false
+        }
+        
+        mostrarAlerta = true
     }
 }
 
