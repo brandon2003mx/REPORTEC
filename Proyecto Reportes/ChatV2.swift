@@ -57,7 +57,7 @@ struct ChatView2: View {
                                         .font(.system(size: 30, weight: .bold))
                                         .foregroundColor(.black.opacity(0.7))
 
-                                    Text("\u{00BF}Como te puedo ayudar?")
+                                    Text("¿Cómo te puedo ayudar?")
                                         .font(.system(size: 18, weight: .semibold))
                                         .foregroundColor(.black.opacity(0.7))
                                 }
@@ -81,7 +81,7 @@ struct ChatView2: View {
 
                             // Burbuja: bot pide detalles
                             HStack {
-                                Text("Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPara generar tu reporte necesito:\n1. Ubicacion exacta (edificio / salon o area)\n2. \u{00BF}Que notas? (descripcion del problema)")
+                                Text("Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPara generar tu reporte necesito:\n1. Ubicación exacta (edificio / salón o área)\n2. ¿Qué notas? (descripción del problema)")
                                     .foregroundColor(.white)
                                     .font(.system(size: 15))
                                     .padding()
@@ -111,7 +111,7 @@ struct ChatView2: View {
                                 // Burbuja: confirmacion del bot con folio
                                 if case .reporteCreado(let folio) = estadoChat {
                                     HStack {
-                                        Text("\u{2705} Reporte creado con folio #\(folio).\n\n\u{2022} Tipo: \(tipoIncidencia)\n\u{2022} Descripcion: \(descripcionEnviada)\n\u{2022} Area asignada: Mantenimiento\n\u{2022} Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
+                                        Text("✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Descripción: \(descripcionEnviada)\n• Área asignada: Mantenimiento\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
                                             .foregroundColor(.white)
                                             .font(.system(size: 15))
                                             .padding()
@@ -145,7 +145,7 @@ struct ChatView2: View {
                 // Campo de texto (visible solo mientras se espera descripcion)
                 if case .esperandoDescripcion = estadoChat {
                     HStack(spacing: 12) {
-                        TextField("Escribe la ubicacion y descripcion del problema...", text: $mensaje)
+                        TextField("Escribe la ubicación y descripción del problema...", text: $mensaje)
                             .padding()
                             .background(Color.white)
                             .cornerRadius(20)
@@ -188,6 +188,6 @@ struct ChatView2: View {
 
 #Preview {
     NavigationStack {
-        ChatView2(tipoIncidencia: "El clima no funciona (no esta encendido)")
+        ChatView2(tipoIncidencia: "El clima no funciona (no está encendido)")
     }
 }
