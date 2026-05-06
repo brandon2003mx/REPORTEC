@@ -7,6 +7,7 @@ struct ResponsableLoginView: View {
     @State private var usuario: String = ""
     @State private var contrasena: String = ""
     @State private var irAGestion = false
+    @State private var usuarioLogueado = ""
     @State private var mostrarAlerta = false
     @State private var mensajeAlerta = ""
 
@@ -110,7 +111,7 @@ struct ResponsableLoginView: View {
             }
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $irAGestion) {
-                GestionReportesView()
+                GestionReportesView(areaUsuario: usuarioLogueado)
             }
             .alert("Aviso", isPresented: $mostrarAlerta) {
                 Button("OK", role: .cancel) { }
@@ -127,7 +128,8 @@ struct ResponsableLoginView: View {
             return
         }
 
-        if DatabaseManager.shared.iniciarSesionResponsable(usuario: usuario, contrasena: contrasena) {
+        if let logueado = DatabaseManager.shared.iniciarSesionResponsable(usuario: usuario, contrasena: contrasena) {
+            usuarioLogueado = logueado
             irAGestion = true
         } else {
             mensajeAlerta = "Usuario o contraseña incorrectos."
