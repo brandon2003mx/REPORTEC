@@ -7,6 +7,12 @@ struct Usuario: Identifiable {
     var contrasena: String
 }
 
+struct Responsable: Identifiable {
+    var id: Int
+    var usuario: String
+    var contrasena: String
+}
+
 struct Reporte: Identifiable {
     var id: Int
     var tipo: String
@@ -66,8 +72,18 @@ class DatabaseManager {
         );
         """
         
+        let tablaResponsables = """
+        CREATE TABLE IF NOT EXISTS responsables(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE,
+            contrasena TEXT
+        );
+        """
+        
         execute(query: tablaUsuarios)
         execute(query: tablaReportes)
+        execute(query: tablaResponsables)
+        insertarResponsableDefecto()
     }
     
     // MARK: - Ejecutar consulta simple
@@ -88,6 +104,39 @@ class DatabaseManager {
         }
         
         sqlite3_finalize(statement)
+    }
+    
+    // MARK: - Insertar responsable por defecto
+    
+    func insertarResponsableDefecto() {
+        let query = "INSERT OR IGNORE INTO responsables (usuario, contrasena) VALUES (?, ?);"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, ("responsable" as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 2, ("Admin2024" as NSString).utf8String, -1, nil)
+            sqlite3_step(statement)
+        }
+        sqlite3_finalize(statement)
+    }
+    
+    // MARK: - Iniciar sesión responsable
+    
+    func iniciarSesionResponsable(usuario: String, contrasena: String) -> Bool {
+        let query = "SELECT * FROM responsables WHERE usuario = ? AND contrasena = ?;"
+        var statement: OpaquePointer?
+        var existe = false
+        
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (usuario as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 2, (contrasena as NSString).utf8String, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                existe = true
+            }
+        }
+        sqlite3_finalize(statement)
+        return existe
     }
     
     // MARK: - Registrar usuario
