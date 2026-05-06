@@ -6,6 +6,11 @@ struct RecuperarContrasenaView: View {
     
     @State private var numeroControl = ""
     @State private var nuevaContrasena = ""
+    @State private var confirmarContrasena = ""
+    
+    @State private var mostrarAlerta = false
+    @State private var mensajeAlerta = ""
+    @State private var actualizacionExitosa = false
     
     var body: some View {
         ZStack {
@@ -83,11 +88,22 @@ struct RecuperarContrasenaView: View {
                                 .background(Color.white)
                                 .cornerRadius(18)
                         }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Confirmar nueva contraseña")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
+                            
+                            SecureField("Confirma tu nueva contraseña", text: $confirmarContrasena)
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(18)
+                        }
                     }
                     .padding(.horizontal, 25)
                     
                     Button {
-                        print("Nueva contraseña para: \(numeroControl)")
+                        actualizarContrasena()
                     } label: {
                         Text("Actualizar contraseña")
                             .font(.system(size: 18, weight: .bold))
@@ -109,6 +125,43 @@ struct RecuperarContrasenaView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .alert("Aviso", isPresented: $mostrarAlerta) {
+            Button("OK", role: .cancel) {
+                if actualizacionExitosa {
+                    dismiss()
+                }
+            }
+        } message: {
+            Text(mensajeAlerta)
+        }
+    }
+    
+    func actualizarContrasena() {
+        guard !numeroControl.isEmpty, !nuevaContrasena.isEmpty, !confirmarContrasena.isEmpty else {
+            mensajeAlerta = "Por favor llena todos los campos."
+            mostrarAlerta = true
+            return
+        }
+        
+        guard nuevaContrasena == confirmarContrasena else {
+            mensajeAlerta = "Las contraseñas no coinciden."
+            mostrarAlerta = true
+            return
+        }
+        
+        let exito = DatabaseManager.shared.actualizarContrasena(
+            numeroControl: numeroControl,
+            nuevaContrasena: nuevaContrasena
+        )
+        
+        if exito {
+            mensajeAlerta = "Contraseña actualizada correctamente."
+            actualizacionExitosa = true
+        } else {
+            mensajeAlerta = "Número de control no encontrado."
+            actualizacionExitosa = false
+        }
+        mostrarAlerta = true
     }
 }
 
@@ -117,3 +170,4 @@ struct RecuperarContrasenaView: View {
         RecuperarContrasenaView()
     }
 }
+
