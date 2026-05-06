@@ -239,10 +239,10 @@ class DatabaseManager {
     
     // MARK: - Insertar reporte
     
-    func insertarReporte(tipo: String, ubicacion: String, descripcion: String, estatus: String = "NUEVO") -> Bool {
+    func insertarReporte(tipo: String, ubicacion: String, descripcion: String, estatus: String = "NUEVO") -> Int? {
         let query = "INSERT INTO reportes (tipo, ubicacion, descripcion, estatus) VALUES (?, ?, ?, ?);"
         var statement: OpaquePointer?
-        var guardado = false
+        var nuevoId: Int? = nil
         
         if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
             
@@ -253,7 +253,7 @@ class DatabaseManager {
             
             if sqlite3_step(statement) == SQLITE_DONE {
                 print("Reporte guardado correctamente")
-                guardado = true
+                nuevoId = Int(sqlite3_last_insert_rowid(db))
             } else {
                 print("Error al guardar reporte")
             }
@@ -263,7 +263,7 @@ class DatabaseManager {
         }
         
         sqlite3_finalize(statement)
-        return guardado
+        return nuevoId
     }
     
     // MARK: - Obtener reportes
