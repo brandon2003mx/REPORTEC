@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import UserNotifications
 
 struct Usuario: Identifiable {
     var id: Int
@@ -13,12 +14,21 @@ struct Responsable: Identifiable {
     var contrasena: String
 }
 
-struct Reporte: Identifiable {
+struct Reporte: Identifiable, Hashable {
     var id: Int
     var tipo: String
     var ubicacion: String
     var descripcion: String
     var estatus: String
+}
+
+struct MensajeChat: Identifiable {
+    var id: Int
+    var reporteId: Int
+    var remitente: String   // "usuario" o "bot"
+    var contenido: String
+    var fecha: String
+    var leido: Bool
 }
 
 class DatabaseManager {
@@ -79,10 +89,22 @@ class DatabaseManager {
             contrasena TEXT
         );
         """
-        
+
+        let tablaMensajes = """
+        CREATE TABLE IF NOT EXISTS mensajes_chat(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reporte_id INTEGER,
+            remitente TEXT,
+            contenido TEXT,
+            fecha TEXT,
+            leido INTEGER DEFAULT 0
+        );
+        """
+
         execute(query: tablaUsuarios)
         execute(query: tablaReportes)
         execute(query: tablaResponsables)
+        execute(query: tablaMensajes)
         insertarResponsablesDefecto()
     }
     
@@ -126,7 +148,8 @@ class DatabaseManager {
     
     func areaParaTipo(_ tipo: String) -> String {
         let lower = tipo.lowercased()
-        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua") {
+        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua")
+            || lower.contains("fuga") || lower.contains("baño") {
             return "recursosmat"
         }
         return "mantenimiento"
@@ -400,12 +423,37 @@ class DatabaseManager {
         }
         
         sqlite3_finalize(statement)
+
+        if actualizado {
+            let contenido = "📋 El estatus de tu reporte ha sido actualizado a: \(nuevoEstatus)."
+            insertarMensajeChat(reporteId: id, remitente: "bot", contenido: contenido)
+            enviarNotificacion(reporteId: id, nuevoEstatus: nuevoEstatus)
+        }
+
         return actualizado
+    }
+
+    // MARK: - Enviar notificación local
+
+    private func enviarNotificacion(reporteId: Int, nuevoEstatus: String) {
+        let contenido = UNMutableNotificationContent()
+        contenido.title = "REPORTEC – Actualización de reporte"
+        contenido.body = "Tu reporte #\(reporteId) cambió su estatus a: \(nuevoEstatus)."
+        contenido.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "reporte_\(reporteId)_\(Int(Date().timeIntervalSince1970))",
+            content: contenido,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
     }
     
     // MARK: - Eliminar reporte
     
     func eliminarReporte(id: Int) -> Bool {
+        eliminarMensajesDeReporte(reporteId: id)
         let query = "DELETE FROM reportes WHERE id = ?;"
         var statement: OpaquePointer?
         var eliminado = false
@@ -427,5 +475,115 @@ class DatabaseManager {
         
         sqlite3_finalize(statement)
         return eliminado
+    }
+
+    // MARK: - Obtener un reporte por ID
+
+    func obtenerReporte(id: Int) -> Reporte? {
+        let query = "SELECT id, tipo, ubicacion, descripcion, estatus FROM reportes WHERE id = ?;"
+        var statement: OpaquePointer?
+        var reporte: Reporte? = nil
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(id))
+            if sqlite3_step(statement) == SQLITE_ROW {
+                let rid = Int(sqlite3_column_int(statement, 0))
+                let tipo = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
+                let ubicacion = sqlite3_column_text(statement, 2).map { String(cString: $0) } ?? ""
+                let descripcion = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
+                let estatus = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
+                reporte = Reporte(id: rid, tipo: tipo, ubicacion: ubicacion, descripcion: descripcion, estatus: estatus)
+            }
+        }
+        sqlite3_finalize(statement)
+        return reporte
+    }
+
+    // MARK: - Insertar mensaje de chat
+
+    @discardableResult
+    func insertarMensajeChat(reporteId: Int, remitente: String, contenido: String) -> Int? {
+        let query = "INSERT INTO mensajes_chat (reporte_id, remitente, contenido, fecha, leido) VALUES (?, ?, ?, ?, ?);"
+        var statement: OpaquePointer?
+        var nuevoId: Int? = nil
+        let fecha = ISO8601DateFormatter().string(from: Date())
+        let leido: Int32 = remitente == "usuario" ? 1 : 0
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(reporteId))
+            sqlite3_bind_text(statement, 2, (remitente as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 3, (contenido as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 4, (fecha as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(statement, 5, leido)
+            if sqlite3_step(statement) == SQLITE_DONE {
+                nuevoId = Int(sqlite3_last_insert_rowid(db))
+            }
+        }
+        sqlite3_finalize(statement)
+        return nuevoId
+    }
+
+    // MARK: - Obtener mensajes de chat de un reporte
+
+    func obtenerMensajesChat(reporteId: Int) -> [MensajeChat] {
+        let query = "SELECT id, reporte_id, remitente, contenido, fecha, leido FROM mensajes_chat WHERE reporte_id = ? ORDER BY id ASC;"
+        var statement: OpaquePointer?
+        var mensajes: [MensajeChat] = []
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(reporteId))
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let mid = Int(sqlite3_column_int(statement, 0))
+                let rid = Int(sqlite3_column_int(statement, 1))
+                let remitente = sqlite3_column_text(statement, 2).map { String(cString: $0) } ?? ""
+                let contenido = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
+                let fecha = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
+                let leido = sqlite3_column_int(statement, 5) == 1
+                mensajes.append(MensajeChat(id: mid, reporteId: rid, remitente: remitente, contenido: contenido, fecha: fecha, leido: leido))
+            }
+        }
+        sqlite3_finalize(statement)
+        return mensajes
+    }
+
+    // MARK: - Contar mensajes no leídos (bot) de un reporte
+
+    func contarMensajesNoLeidos(reporteId: Int) -> Int {
+        let query = "SELECT COUNT(*) FROM mensajes_chat WHERE reporte_id = ? AND leido = 0;"
+        var statement: OpaquePointer?
+        var count = 0
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(reporteId))
+            if sqlite3_step(statement) == SQLITE_ROW {
+                count = Int(sqlite3_column_int(statement, 0))
+            }
+        }
+        sqlite3_finalize(statement)
+        return count
+    }
+
+    // MARK: - Marcar mensajes de un reporte como leídos
+
+    func marcarMensajesLeidos(reporteId: Int) {
+        let query = "UPDATE mensajes_chat SET leido = 1 WHERE reporte_id = ?;"
+        var statement: OpaquePointer?
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(reporteId))
+            sqlite3_step(statement)
+        }
+        sqlite3_finalize(statement)
+    }
+
+    // MARK: - Eliminar mensajes de chat de un reporte
+
+    func eliminarMensajesDeReporte(reporteId: Int) {
+        let query = "DELETE FROM mensajes_chat WHERE reporte_id = ?;"
+        var statement: OpaquePointer?
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(reporteId))
+            sqlite3_step(statement)
+        }
+        sqlite3_finalize(statement)
     }
 }

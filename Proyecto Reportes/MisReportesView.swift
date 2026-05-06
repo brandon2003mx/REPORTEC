@@ -4,6 +4,10 @@ struct MisReportesView: View {
 
     @Environment(\.dismiss) var dismiss
     @State private var reportes: [Reporte] = []
+    @State private var unreadCounts: [Int: Int] = [:]
+    @State private var reporteSeleccionado: Reporte? = nil
+    @State private var reporteAEliminar: Reporte? = nil
+    @State private var mostrarAlertaEliminar = false
 
     var body: some View {
         ZStack {
@@ -81,7 +85,15 @@ struct MisReportesView: View {
                         ScrollView {
                             LazyVStack(spacing: 14) {
                                 ForEach(reportes) { reporte in
-                                    ReporteCardView(reporte: reporte)
+                                    ReporteCardView(
+                                        reporte: reporte,
+                                        mensajesNoLeidos: unreadCounts[reporte.id] ?? 0,
+                                        onTap: { reporteSeleccionado = reporte },
+                                        onEliminar: {
+                                            reporteAEliminar = reporte
+                                            mostrarAlertaEliminar = true
+                                        }
+                                    )
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -97,10 +109,35 @@ struct MisReportesView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear { cargarReportes() }
+        .navigationDestination(item: $reporteSeleccionado) { reporte in
+            ReporteChatView(reporte: reporte)
+        }
+        .alert("Eliminar reporte", isPresented: $mostrarAlertaEliminar, presenting: reporteAEliminar) { reporte in
+            Button("Eliminar", role: .destructive) {
+                eliminarReporte(reporte: reporte)
+            }
+            Button("Cancelar", role: .cancel) {
+                reporteAEliminar = nil
+            }
+        } message: { reporte in
+            Text("¿Deseas eliminar el Reporte #\(reporte.id)? Esta acción no se puede deshacer.")
+        }
     }
 
     func cargarReportes() {
         reportes = DatabaseManager.shared.obtenerReportes()
+        var counts: [Int: Int] = [:]
+        for reporte in reportes {
+            let n = DatabaseManager.shared.contarMensajesNoLeidos(reporteId: reporte.id)
+            if n > 0 { counts[reporte.id] = n }
+        }
+        unreadCounts = counts
+    }
+
+    func eliminarReporte(reporte: Reporte) {
+        DatabaseManager.shared.eliminarReporte(id: reporte.id)
+        reporteAEliminar = nil
+        cargarReportes()
     }
 }
 
@@ -109,71 +146,101 @@ struct MisReportesView: View {
 struct ReporteCardView: View {
 
     let reporte: Reporte
+    let mensajesNoLeidos: Int
+    let onTap: () -> Void
+    let onEliminar: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
 
-            // Fila superior: folio + badge de estatus
-            HStack {
-                Text("Folio #\(reporte.id)")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
-                Spacer()
-                EstatusBadge(estatus: reporte.estatus)
-            }
-
-            Divider()
-
-            // Tipo
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
-                    .font(.system(size: 14))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tipo de incidencia")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.gray)
-                    Text(reporte.tipo)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.8))
+                // Fila superior: folio + badge de estatus + eliminar
+                HStack {
+                    Text("Folio #\(reporte.id)")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
+                    Spacer()
+                    EstatusBadge(estatus: reporte.estatus)
+                    Button(action: onEliminar) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15))
+                            .foregroundColor(.red.opacity(0.75))
+                            .padding(8)
+                            .background(Color.red.opacity(0.08))
+                            .clipShape(Circle())
+                    }
                 }
-            }
 
-            // Ubicación
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
-                    .font(.system(size: 14))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Ubicación")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.gray)
-                    Text(reporte.ubicacion)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.8))
-                }
-            }
+                Divider()
 
-            // Descripción
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "text.alignleft")
-                    .foregroundColor(.gray)
-                    .font(.system(size: 14))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Descripción")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.gray)
-                    Text(reporte.descripcion)
+                // Tipo
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
                         .font(.system(size: 14))
-                        .foregroundColor(.black.opacity(0.75))
-                        .lineLimit(3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tipo de incidencia")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Text(reporte.tipo)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black.opacity(0.8))
+                    }
+                }
+
+                // Ubicación
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
+                        .font(.system(size: 14))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ubicación")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Text(reporte.ubicacion)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black.opacity(0.8))
+                    }
+                }
+
+                // Descripción
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "text.alignleft")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 14))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Descripción")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Text(reporte.descripcion)
+                            .font(.system(size: 14))
+                            .foregroundColor(.black.opacity(0.75))
+                            .lineLimit(3)
+                    }
+                }
+
+                // Badge de mensajes no leídos
+                if mensajesNoLeidos > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white)
+                        Text("\(mensajesNoLeidos) mensaje\(mensajesNoLeidos == 1 ? "" : "s") nuevo\(mensajesNoLeidos == 1 ? "" : "s")")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.red)
+                    .clipShape(Capsule())
                 }
             }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 3)
         }
-        .padding(16)
-        .background(Color.white)
-        .cornerRadius(20)
-        .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 3)
+        .buttonStyle(.plain)
     }
 }
 
@@ -209,3 +276,4 @@ struct EstatusBadge: View {
         MisReportesView()
     }
 }
+
