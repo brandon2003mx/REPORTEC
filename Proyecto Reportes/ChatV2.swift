@@ -18,7 +18,8 @@ struct ChatView2: View {
 
     var areaAsignada: String {
         let lower = tipoIncidencia.lowercased()
-        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua") {
+        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua")
+            || lower.contains("fuga") || lower.contains("baño") {
             return "Recursos Materiales"
         }
         return "Mantenimiento"
@@ -229,6 +230,18 @@ struct ChatView2: View {
                 ubicacion: ubicacionEnviada,
                 descripcion: trimmed
             ) {
+                // Guardar la conversación completa en el historial del reporte
+                let db = DatabaseManager.shared
+                db.insertarMensajeChat(reporteId: folio, remitente: "usuario", contenido: tipoIncidencia)
+                db.insertarMensajeChat(reporteId: folio, remitente: "bot",
+                    contenido: "Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPrimero dime la ubicación exacta (edificio / salón o área).")
+                db.insertarMensajeChat(reporteId: folio, remitente: "usuario", contenido: ubicacionEnviada)
+                db.insertarMensajeChat(reporteId: folio, remitente: "bot",
+                    contenido: "Gracias. Ahora dime, ¿qué notas? (descripción del problema)")
+                db.insertarMensajeChat(reporteId: folio, remitente: "usuario", contenido: trimmed)
+                db.insertarMensajeChat(reporteId: folio, remitente: "bot",
+                    contenido: "✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(trimmed)\n• Área asignada: \(areaAsignada)\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
+
                 estadoChat = .reporteCreado(folio: folio)
             }
         }
