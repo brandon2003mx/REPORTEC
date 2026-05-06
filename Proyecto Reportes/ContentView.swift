@@ -77,6 +77,24 @@ struct ContentView: View {
                             .padding(.top, 10)
                     }
                     
+                    Divider()
+                        .background(Color.white.opacity(0.4))
+                        .padding(.horizontal, 50)
+                    
+                    NavigationLink(destination: ResponsableLoginView()) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.badge.key.fill")
+                            Text("Acceso Responsable")
+                                .bold()
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 30)
+                        .background(Color.white.opacity(0.15))
+                        .cornerRadius(18)
+                    }
+                    .padding(.horizontal, 30)
+                    
                     Spacer()
                 }
             }
