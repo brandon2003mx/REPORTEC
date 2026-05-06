@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum EstadoChat: Equatable {
+    case esperandoUbicacion
     case esperandoDescripcion
     case reporteCreado(folio: Int)
 }
@@ -9,8 +10,9 @@ struct ChatView2: View {
 
     @Environment(\.dismiss) var dismiss
     @State private var mensaje = ""
+    @State private var ubicacionEnviada = ""
     @State private var descripcionEnviada = ""
-    @State private var estadoChat: EstadoChat = .esperandoDescripcion
+    @State private var estadoChat: EstadoChat = .esperandoUbicacion
 
     let tipoIncidencia: String
 
@@ -79,9 +81,9 @@ struct ChatView2: View {
                             }
                             .padding(.horizontal, 20)
 
-                            // Burbuja: bot pide detalles
+                            // Burbuja: bot pide ubicacion
                             HStack {
-                                Text("Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPara generar tu reporte necesito:\n1. Ubicación exacta (edificio / salón o área)\n2. ¿Qué notas? (descripción del problema)")
+                                Text("Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPrimero dime la ubicación exacta (edificio / salón o área).")
                                     .foregroundColor(.white)
                                     .font(.system(size: 15))
                                     .padding()
@@ -91,6 +93,36 @@ struct ChatView2: View {
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
+
+                            // Mostrar ubicacion enviada y pedir descripcion
+                            if !ubicacionEnviada.isEmpty {
+
+                                // Burbuja: ubicacion del usuario
+                                HStack {
+                                    Spacer()
+                                    Text(ubicacionEnviada)
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 16))
+                                        .padding()
+                                        .frame(maxWidth: 260, alignment: .leading)
+                                        .background(Color(red: 0.12, green: 0.05, blue: 0.85))
+                                        .cornerRadius(25)
+                                }
+                                .padding(.horizontal, 20)
+
+                                // Burbuja: bot pide descripcion
+                                HStack {
+                                    Text("Gracias. Ahora dime, ¿qué notas? (descripción del problema)")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 15))
+                                        .padding()
+                                        .frame(maxWidth: 320, alignment: .leading)
+                                        .background(Color(red: 0.00, green: 0.3, blue: 0.95))
+                                        .cornerRadius(25)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 20)
+                            }
 
                             // Mostrar descripcion del usuario y confirmacion tras enviar
                             if !descripcionEnviada.isEmpty {
@@ -111,7 +143,7 @@ struct ChatView2: View {
                                 // Burbuja: confirmacion del bot con folio
                                 if case .reporteCreado(let folio) = estadoChat {
                                     HStack {
-                                        Text("✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Descripción: \(descripcionEnviada)\n• Área asignada: Mantenimiento\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
+                                        Text("✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(descripcionEnviada)\n• Área asignada: Mantenimiento\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
                                             .foregroundColor(.white)
                                             .font(.system(size: 15))
                                             .padding()
@@ -142,16 +174,21 @@ struct ChatView2: View {
                 .clipShape(RoundedRectangle(cornerRadius: 45, style: .continuous))
                 .padding(.horizontal, 8)
 
-                // Campo de texto (visible solo mientras se espera descripcion)
-                if case .esperandoDescripcion = estadoChat {
+                // Campo de texto (visible mientras se espera ubicacion o descripcion)
+                if estadoChat == .esperandoUbicacion || estadoChat == .esperandoDescripcion {
                     HStack(spacing: 12) {
-                        TextField("Escribe la ubicación y descripción del problema...", text: $mensaje)
+                        TextField(
+                            estadoChat == .esperandoUbicacion
+                                ? "Escribe la ubicación (edificio / salón o área)..."
+                                : "Escribe la descripción del problema...",
+                            text: $mensaje
+                        )
                             .padding()
                             .background(Color.white)
                             .cornerRadius(20)
 
                         Button(action: {
-                            enviarDescripcion()
+                            enviarMensaje()
                         }) {
                             Image(systemName: "paperplane.fill")
                                 .font(.system(size: 22))
@@ -169,19 +206,23 @@ struct ChatView2: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    func enviarDescripcion() {
+    func enviarMensaje() {
         let trimmed = mensaje.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-
-        descripcionEnviada = trimmed
         mensaje = ""
 
-        if let folio = DatabaseManager.shared.insertarReporte(
-            tipo: tipoIncidencia,
-            ubicacion: trimmed,
-            descripcion: trimmed
-        ) {
-            estadoChat = .reporteCreado(folio: folio)
+        if estadoChat == .esperandoUbicacion {
+            ubicacionEnviada = trimmed
+            estadoChat = .esperandoDescripcion
+        } else if estadoChat == .esperandoDescripcion {
+            descripcionEnviada = trimmed
+            if let folio = DatabaseManager.shared.insertarReporte(
+                tipo: tipoIncidencia,
+                ubicacion: ubicacionEnviada,
+                descripcion: trimmed
+            ) {
+                estadoChat = .reporteCreado(folio: folio)
+            }
         }
     }
 }
