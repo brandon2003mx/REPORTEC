@@ -157,8 +157,12 @@ class DatabaseManager {
             sqlite3_bind_text(statement, 2, (numeroControl as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
-                print("Contraseña actualizada correctamente")
-                actualizado = true
+                if sqlite3_changes(db) > 0 {
+                    print("Contraseña actualizada correctamente")
+                    actualizado = true
+                } else {
+                    print("Número de control no encontrado")
+                }
             } else {
                 print("Error al actualizar contraseña")
             }
