@@ -83,7 +83,7 @@ class DatabaseManager {
         execute(query: tablaUsuarios)
         execute(query: tablaReportes)
         execute(query: tablaResponsables)
-        insertarResponsableDefecto()
+        insertarResponsablesDefecto()
     }
     
     // MARK: - Ejecutar consulta simple
@@ -106,37 +106,56 @@ class DatabaseManager {
         sqlite3_finalize(statement)
     }
     
-    // MARK: - Insertar responsable por defecto
+    // MARK: - Insertar responsables por defecto
     
-    func insertarResponsableDefecto() {
+    func insertarResponsablesDefecto() {
         let query = "INSERT OR IGNORE INTO responsables (usuario, contrasena) VALUES (?, ?);"
-        var statement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, ("responsable" as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(statement, 2, ("Admin2024" as NSString).utf8String, -1, nil)
-            sqlite3_step(statement)
+        let usuarios = [("recursosmat", "rm123"), ("mantenimiento", "m123")]
+        for (usuario, contrasena) in usuarios {
+            var statement: OpaquePointer?
+            if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, (usuario as NSString).utf8String, -1, nil)
+                sqlite3_bind_text(statement, 2, (contrasena as NSString).utf8String, -1, nil)
+                sqlite3_step(statement)
+            }
+            sqlite3_finalize(statement)
         }
-        sqlite3_finalize(statement)
+    }
+    
+    // MARK: - Área asignada según tipo de incidencia
+    
+    func areaParaTipo(_ tipo: String) -> String {
+        let lower = tipo.lowercased()
+        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua") {
+            return "recursosmat"
+        }
+        return "mantenimiento"
     }
     
     // MARK: - Iniciar sesión responsable
     
-    func iniciarSesionResponsable(usuario: String, contrasena: String) -> Bool {
-        let query = "SELECT * FROM responsables WHERE usuario = ? AND contrasena = ?;"
+    func iniciarSesionResponsable(usuario: String, contrasena: String) -> String? {
+        let query = "SELECT usuario FROM responsables WHERE usuario = ? AND contrasena = ?;"
         var statement: OpaquePointer?
-        var existe = false
+        var usuarioLogueado: String? = nil
         
         if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, (usuario as NSString).utf8String, -1, nil)
             sqlite3_bind_text(statement, 2, (contrasena as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_ROW {
-                existe = true
+                let usuarioTexto = sqlite3_column_text(statement, 0)
+                usuarioLogueado = usuarioTexto != nil ? String(cString: usuarioTexto!) : usuario
             }
         }
         sqlite3_finalize(statement)
-        return existe
+        return usuarioLogueado
+    }
+    
+    // MARK: - Obtener reportes filtrados por área
+    
+    func obtenerReportesDeArea(_ area: String) -> [Reporte] {
+        return obtenerReportes().filter { areaParaTipo($0.tipo) == area }
     }
     
     // MARK: - Registrar usuario

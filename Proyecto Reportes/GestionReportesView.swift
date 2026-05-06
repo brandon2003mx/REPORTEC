@@ -7,7 +7,12 @@ struct GestionReportesView: View {
     @State private var mostrarAlerta = false
     @State private var mensajeAlerta = ""
 
+    let areaUsuario: String
     let estatusOpciones = ["NUEVO", "EN PROCESO", "RESUELTO", "CERRADO"]
+
+    var nombreArea: String {
+        areaUsuario == "recursosmat" ? "Recursos Materiales" : "Mantenimiento"
+    }
 
     var body: some View {
         ZStack {
@@ -46,6 +51,9 @@ struct GestionReportesView: View {
                             Text("Gestión de Reportes")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black.opacity(0.75))
+                            Text(nombreArea)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
                             Text("\(reportes.count) reporte\(reportes.count == 1 ? "" : "s") registrado\(reportes.count == 1 ? "" : "s")")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.gray)
@@ -115,7 +123,7 @@ struct GestionReportesView: View {
     }
 
     func cargarReportes() {
-        reportes = DatabaseManager.shared.obtenerReportes()
+        reportes = DatabaseManager.shared.obtenerReportesDeArea(areaUsuario)
     }
 
     func cambiarEstatus(reporte: Reporte, nuevoEstatus: String) {
@@ -245,6 +253,6 @@ struct GestionReporteCardView: View {
 
 #Preview {
     NavigationStack {
-        GestionReportesView()
+        GestionReportesView(areaUsuario: "mantenimiento")
     }
 }

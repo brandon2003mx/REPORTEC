@@ -16,6 +16,14 @@ struct ChatView2: View {
 
     let tipoIncidencia: String
 
+    var areaAsignada: String {
+        let lower = tipoIncidencia.lowercased()
+        if lower.contains("sillas") || lower.contains("mesas") || lower.contains("agua") {
+            return "Recursos Materiales"
+        }
+        return "Mantenimiento"
+    }
+
     var body: some View {
         ZStack {
             Color(red: 0.10, green: 0.08, blue: 0.85)
@@ -143,7 +151,7 @@ struct ChatView2: View {
                                 // Burbuja: confirmacion del bot con folio
                                 if case .reporteCreado(let folio) = estadoChat {
                                     HStack {
-                                        Text("✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(descripcionEnviada)\n• Área asignada: Mantenimiento\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
+                                        Text("✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(descripcionEnviada)\n• Área asignada: \(areaAsignada)\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.")
                                             .foregroundColor(.white)
                                             .font(.system(size: 15))
                                             .padding()
