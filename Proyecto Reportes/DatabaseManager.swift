@@ -6,6 +6,7 @@ struct Usuario: Identifiable {
     var id: Int
     var numeroControl: String
     var contrasena: String
+    var correo: String = ""
 }
 
 struct Responsable: Identifiable {
@@ -20,6 +21,7 @@ struct Reporte: Identifiable, Hashable {
     var ubicacion: String
     var descripcion: String
     var estatus: String
+    var numeroControl: String = ""
 }
 
 struct MensajeChat: Identifiable {
@@ -68,7 +70,8 @@ class DatabaseManager {
         CREATE TABLE IF NOT EXISTS usuarios(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             numeroControl TEXT UNIQUE,
-            contrasena TEXT
+            contrasena TEXT,
+            correo TEXT UNIQUE
         );
         """
         
@@ -78,7 +81,8 @@ class DatabaseManager {
             tipo TEXT,
             ubicacion TEXT,
             descripcion TEXT,
-            estatus TEXT
+            estatus TEXT,
+            numeroControl TEXT
         );
         """
         
@@ -105,6 +109,8 @@ class DatabaseManager {
         execute(query: tablaReportes)
         execute(query: tablaResponsables)
         execute(query: tablaMensajes)
+        agregarColumnaSiNoExiste(tabla: "usuarios", columna: "correo", definicion: "TEXT")
+        agregarColumnaSiNoExiste(tabla: "reportes", columna: "numeroControl", definicion: "TEXT")
         insertarResponsablesDefecto()
     }
     
@@ -126,6 +132,27 @@ class DatabaseManager {
         }
         
         sqlite3_finalize(statement)
+    }
+
+    private func agregarColumnaSiNoExiste(tabla: String, columna: String, definicion: String) {
+        let query = "PRAGMA table_info(\(tabla));"
+        var statement: OpaquePointer?
+        var existeColumna = false
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let nombreColumna = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
+                if nombreColumna == columna {
+                    existeColumna = true
+                    break
+                }
+            }
+        }
+
+        sqlite3_finalize(statement)
+
+        guard !existeColumna else { return }
+        execute(query: "ALTER TABLE \(tabla) ADD COLUMN \(columna) \(definicion);")
     }
     
     // MARK: - Insertar responsables por defecto
@@ -183,8 +210,8 @@ class DatabaseManager {
     
     // MARK: - Registrar usuario
     
-    func registrarUsuario(numeroControl: String, contrasena: String) -> Bool {
-        let query = "INSERT INTO usuarios (numeroControl, contrasena) VALUES (?, ?);"
+    func registrarUsuario(numeroControl: String, correo: String, contrasena: String) -> Bool {
+        let query = "INSERT INTO usuarios (numeroControl, contrasena, correo) VALUES (?, ?, ?);"
         var statement: OpaquePointer?
         var registrado = false
         
@@ -192,6 +219,7 @@ class DatabaseManager {
             
             sqlite3_bind_text(statement, 1, (numeroControl as NSString).utf8String, -1, nil)
             sqlite3_bind_text(statement, 2, (contrasena as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 3, (correo as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
                 print("Usuario registrado correctamente")
@@ -269,7 +297,7 @@ class DatabaseManager {
     // MARK: - Obtener usuarios
     
     func obtenerUsuarios() -> [Usuario] {
-        let query = "SELECT id, numeroControl, contrasena FROM usuarios;"
+        let query = "SELECT id, numeroControl, contrasena, correo FROM usuarios;"
         var statement: OpaquePointer?
         var usuarios: [Usuario] = []
         
@@ -281,14 +309,17 @@ class DatabaseManager {
                 
                 let numeroControlTexto = sqlite3_column_text(statement, 1)
                 let contrasenaTexto = sqlite3_column_text(statement, 2)
+                let correoTexto = sqlite3_column_text(statement, 3)
                 
                 let numeroControl = numeroControlTexto != nil ? String(cString: numeroControlTexto!) : ""
                 let contrasena = contrasenaTexto != nil ? String(cString: contrasenaTexto!) : ""
+                let correo = correoTexto != nil ? String(cString: correoTexto!) : ""
                 
                 let usuario = Usuario(
                     id: id,
                     numeroControl: numeroControl,
-                    contrasena: contrasena
+                    contrasena: contrasena,
+                    correo: correo
                 )
                 
                 usuarios.append(usuario)
@@ -330,8 +361,8 @@ class DatabaseManager {
     
     // MARK: - Insertar reporte
     
-    func insertarReporte(tipo: String, ubicacion: String, descripcion: String, estatus: String = "NUEVO") -> Int? {
-        let query = "INSERT INTO reportes (tipo, ubicacion, descripcion, estatus) VALUES (?, ?, ?, ?);"
+    func insertarReporte(tipo: String, ubicacion: String, descripcion: String, numeroControl: String, estatus: String = "NUEVO") -> Int? {
+        let query = "INSERT INTO reportes (tipo, ubicacion, descripcion, estatus, numeroControl) VALUES (?, ?, ?, ?, ?);"
         var statement: OpaquePointer?
         var nuevoId: Int? = nil
         
@@ -341,6 +372,7 @@ class DatabaseManager {
             sqlite3_bind_text(statement, 2, (ubicacion as NSString).utf8String, -1, nil)
             sqlite3_bind_text(statement, 3, (descripcion as NSString).utf8String, -1, nil)
             sqlite3_bind_text(statement, 4, (estatus as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 5, (numeroControl as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
                 print("Reporte guardado correctamente")
@@ -360,7 +392,7 @@ class DatabaseManager {
     // MARK: - Obtener reportes
     
     func obtenerReportes() -> [Reporte] {
-        let query = "SELECT id, tipo, ubicacion, descripcion, estatus FROM reportes;"
+        let query = "SELECT id, tipo, ubicacion, descripcion, estatus, numeroControl FROM reportes;"
         var statement: OpaquePointer?
         var reportes: [Reporte] = []
         
@@ -374,18 +406,21 @@ class DatabaseManager {
                 let ubicacionTexto = sqlite3_column_text(statement, 2)
                 let descripcionTexto = sqlite3_column_text(statement, 3)
                 let estatusTexto = sqlite3_column_text(statement, 4)
+                let numeroControlTexto = sqlite3_column_text(statement, 5)
                 
                 let tipo = tipoTexto != nil ? String(cString: tipoTexto!) : ""
                 let ubicacion = ubicacionTexto != nil ? String(cString: ubicacionTexto!) : ""
                 let descripcion = descripcionTexto != nil ? String(cString: descripcionTexto!) : ""
                 let estatus = estatusTexto != nil ? String(cString: estatusTexto!) : ""
+                let numeroControl = numeroControlTexto != nil ? String(cString: numeroControlTexto!) : ""
                 
                 let reporte = Reporte(
                     id: id,
                     tipo: tipo,
                     ubicacion: ubicacion,
                     descripcion: descripcion,
-                    estatus: estatus
+                    estatus: estatus,
+                    numeroControl: numeroControl
                 )
                 
                 reportes.append(reporte)
@@ -397,6 +432,10 @@ class DatabaseManager {
         
         sqlite3_finalize(statement)
         return reportes
+    }
+
+    func obtenerReportesDelUsuario(_ numeroControl: String) -> [Reporte] {
+        return obtenerReportes().filter { $0.numeroControl == numeroControl }
     }
     
     // MARK: - Actualizar estatus de reporte
@@ -480,7 +519,7 @@ class DatabaseManager {
     // MARK: - Obtener un reporte por ID
 
     func obtenerReporte(id: Int) -> Reporte? {
-        let query = "SELECT id, tipo, ubicacion, descripcion, estatus FROM reportes WHERE id = ?;"
+        let query = "SELECT id, tipo, ubicacion, descripcion, estatus, numeroControl FROM reportes WHERE id = ?;"
         var statement: OpaquePointer?
         var reporte: Reporte? = nil
 
@@ -492,11 +531,36 @@ class DatabaseManager {
                 let ubicacion = sqlite3_column_text(statement, 2).map { String(cString: $0) } ?? ""
                 let descripcion = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
                 let estatus = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
-                reporte = Reporte(id: rid, tipo: tipo, ubicacion: ubicacion, descripcion: descripcion, estatus: estatus)
+                let numeroControl = sqlite3_column_text(statement, 5).map { String(cString: $0) } ?? ""
+                reporte = Reporte(id: rid, tipo: tipo, ubicacion: ubicacion, descripcion: descripcion, estatus: estatus, numeroControl: numeroControl)
             }
         }
         sqlite3_finalize(statement)
         return reporte
+    }
+
+    func obtenerCorreoUsuario(numeroControl: String) -> String? {
+        let query = "SELECT correo FROM usuarios WHERE numeroControl = ? LIMIT 1;"
+        var statement: OpaquePointer?
+        var correo: String? = nil
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (numeroControl as NSString).utf8String, -1, nil)
+            if sqlite3_step(statement) == SQLITE_ROW {
+                correo = sqlite3_column_text(statement, 0).map { String(cString: $0) }
+            }
+        }
+
+        sqlite3_finalize(statement)
+        return correo
+    }
+
+    func obtenerCorreoDeReporte(id: Int) -> String? {
+        guard let reporte = obtenerReporte(id: id), !reporte.numeroControl.isEmpty else {
+            return nil
+        }
+
+        return obtenerCorreoUsuario(numeroControl: reporte.numeroControl)
     }
 
     // MARK: - Insertar mensaje de chat
@@ -585,5 +649,17 @@ class DatabaseManager {
             sqlite3_step(statement)
         }
         sqlite3_finalize(statement)
+    }
+}
+
+final class SessionManager {
+    static let shared = SessionManager()
+
+    private(set) var numeroControlActual: String?
+
+    private init() {}
+
+    func iniciarSesion(numeroControl: String) {
+        numeroControlActual = numeroControl
     }
 }
