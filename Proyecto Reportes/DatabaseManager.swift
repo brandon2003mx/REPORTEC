@@ -109,8 +109,7 @@ class DatabaseManager {
         execute(query: tablaReportes)
         execute(query: tablaResponsables)
         execute(query: tablaMensajes)
-        agregarColumnaSiNoExiste(tabla: "usuarios", columna: "correo", definicion: "TEXT")
-        agregarColumnaSiNoExiste(tabla: "reportes", columna: "numeroControl", definicion: "TEXT")
+        migrarBaseDeDatosSiEsNecesario()
         insertarResponsablesDefecto()
     }
     
@@ -134,10 +133,36 @@ class DatabaseManager {
         sqlite3_finalize(statement)
     }
 
-    private func agregarColumnaSiNoExiste(tabla: String, columna: String, definicion: String) {
+    private func migrarBaseDeDatosSiEsNecesario() {
+        let versionActual = obtenerVersionEsquema()
+
+        if versionActual < 1 {
+            agregarColumnaTextoSiNoExiste(tabla: "usuarios", columna: "correo")
+            agregarColumnaTextoSiNoExiste(tabla: "reportes", columna: "numeroControl")
+            actualizarVersionEsquema(1)
+        }
+    }
+
+    private func obtenerVersionEsquema() -> Int {
+        var statement: OpaquePointer?
+        var version = 0
+
+        if sqlite3_prepare_v2(db, "PRAGMA user_version;", -1, &statement, nil) == SQLITE_OK,
+           sqlite3_step(statement) == SQLITE_ROW {
+            version = Int(sqlite3_column_int(statement, 0))
+        }
+
+        sqlite3_finalize(statement)
+        return version
+    }
+
+    private func actualizarVersionEsquema(_ version: Int) {
+        execute(query: "PRAGMA user_version = \(version);")
+    }
+
+    private func agregarColumnaTextoSiNoExiste(tabla: String, columna: String) {
         guard esIdentificadorSQLSeguro(tabla),
-              esIdentificadorSQLSeguro(columna),
-              definicion == "TEXT" else { return }
+              esIdentificadorSQLSeguro(columna) else { return }
 
         let query = "PRAGMA table_info(\(tabla));"
         var statement: OpaquePointer?
@@ -156,7 +181,7 @@ class DatabaseManager {
         sqlite3_finalize(statement)
 
         guard !existeColumna else { return }
-        execute(query: "ALTER TABLE \(tabla) ADD COLUMN \(columna) \(definicion);")
+        execute(query: "ALTER TABLE \(tabla) ADD COLUMN \(columna) TEXT;")
     }
 
     private func esIdentificadorSQLSeguro(_ valor: String) -> Bool {
