@@ -125,7 +125,13 @@ struct MisReportesView: View {
     }
 
     func cargarReportes() {
-        reportes = DatabaseManager.shared.obtenerReportes()
+        guard let numeroControl = SessionManager.shared.numeroControlActual else {
+            reportes = []
+            unreadCounts = [:]
+            return
+        }
+
+        reportes = DatabaseManager.shared.obtenerReportesDelUsuario(numeroControl)
         var counts: [Int: Int] = [:]
         for reporte in reportes {
             let n = DatabaseManager.shared.contarMensajesNoLeidos(reporteId: reporte.id)
@@ -276,4 +282,3 @@ struct EstatusBadge: View {
         MisReportesView()
     }
 }
-

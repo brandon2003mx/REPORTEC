@@ -3,6 +3,7 @@ import SwiftUI
 struct GestionReportesView: View {
 
     @Environment(\.dismiss) var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var reportes: [Reporte] = []
     @State private var mostrarAlerta = false
     @State private var mensajeAlerta = ""
@@ -127,13 +128,67 @@ struct GestionReportesView: View {
     }
 
     func cambiarEstatus(reporte: Reporte, nuevoEstatus: String) {
+        guard reporte.estatus != nuevoEstatus else { return }
+
         let actualizado = DatabaseManager.shared.actualizarEstatusReporte(id: reporte.id, nuevoEstatus: nuevoEstatus)
         if actualizado {
             cargarReportes()
+            sendStatusChangeEmail(reporte: reporte, nuevoEstatus: nuevoEstatus)
         } else {
             mensajeAlerta = "No se pudo actualizar el estatus."
             mostrarAlerta = true
         }
+    }
+
+    func sendStatusChangeEmail(reporte: Reporte, nuevoEstatus: String) {
+        guard let correoDestino = DatabaseManager.shared.obtenerCorreoDeReporte(id: reporte.id),
+              !correoDestino.isEmpty else {
+            mensajeAlerta = "El estatus se actualizó, pero el reporte no tiene un correo asociado."
+            mostrarAlerta = true
+            return
+        }
+
+        guard EmailValidator.esValido(correoDestino) else {
+            mensajeAlerta = "El estatus se actualizó, pero el correo del estudiante no es válido."
+            mostrarAlerta = true
+            return
+        }
+
+        let asunto = "Actualización de reporte #\(reporte.id)"
+        let cuerpo = """
+        Hola,
+
+        El estatus de tu reporte #\(reporte.id) cambió a: \(nuevoEstatus).
+
+        Tipo: \(reporte.tipo)
+        Ubicación: \(reporte.ubicacion)
+
+        Equipo REPORTEC
+        """
+
+        guard let mailto = makeEmailURL(recipient: correoDestino, subject: asunto, body: cuerpo) else {
+            mensajeAlerta = "No se pudo preparar el correo para el estudiante."
+            mostrarAlerta = true
+            return
+        }
+
+        openURL(mailto) { aceptado in
+            if !aceptado {
+                mensajeAlerta = "No se pudo abrir la aplicación de correo."
+                mostrarAlerta = true
+            }
+        }
+    }
+
+    func makeEmailURL(recipient: String, subject: String, body: String) -> URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = recipient
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components.url
     }
 }
 
