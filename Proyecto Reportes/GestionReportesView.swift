@@ -154,7 +154,7 @@ struct GestionReportesView: View {
         }
 
         guard EmailService.estaConfigurado else {
-            mensajeAlerta = "Estatus actualizado. El correo automático está desactivado porque el servicio no está configurado."
+            mensajeAlerta = "Estatus actualizado. Envío de correo omitido: servicio no configurado."
             mostrarAlerta = true
             return
         }
