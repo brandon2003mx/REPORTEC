@@ -135,6 +135,10 @@ class DatabaseManager {
     }
 
     private func agregarColumnaSiNoExiste(tabla: String, columna: String, definicion: String) {
+        guard esIdentificadorSQLSeguro(tabla),
+              esIdentificadorSQLSeguro(columna),
+              definicion == "TEXT" else { return }
+
         let query = "PRAGMA table_info(\(tabla));"
         var statement: OpaquePointer?
         var existeColumna = false
@@ -153,6 +157,11 @@ class DatabaseManager {
 
         guard !existeColumna else { return }
         execute(query: "ALTER TABLE \(tabla) ADD COLUMN \(columna) \(definicion);")
+    }
+
+    private func esIdentificadorSQLSeguro(_ valor: String) -> Bool {
+        let permitidos = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
+        return !valor.isEmpty && valor.unicodeScalars.allSatisfy { permitidos.contains($0) }
     }
     
     // MARK: - Insertar responsables por defecto
@@ -435,7 +444,36 @@ class DatabaseManager {
     }
 
     func obtenerReportesDelUsuario(_ numeroControl: String) -> [Reporte] {
-        return obtenerReportes().filter { $0.numeroControl == numeroControl }
+        let query = "SELECT id, tipo, ubicacion, descripcion, estatus, numeroControl FROM reportes WHERE numeroControl = ?;"
+        var statement: OpaquePointer?
+        var reportes: [Reporte] = []
+
+        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (numeroControl as NSString).utf8String, -1, nil)
+
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let tipo = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
+                let ubicacion = sqlite3_column_text(statement, 2).map { String(cString: $0) } ?? ""
+                let descripcion = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
+                let estatus = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
+                let numeroControlReporte = sqlite3_column_text(statement, 5).map { String(cString: $0) } ?? ""
+
+                reportes.append(
+                    Reporte(
+                        id: id,
+                        tipo: tipo,
+                        ubicacion: ubicacion,
+                        descripcion: descripcion,
+                        estatus: estatus,
+                        numeroControl: numeroControlReporte
+                    )
+                )
+            }
+        }
+
+        sqlite3_finalize(statement)
+        return reportes
     }
     
     // MARK: - Actualizar estatus de reporte

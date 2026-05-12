@@ -187,9 +187,8 @@ struct RegistroView: View {
     }
 
     func correoEsValido(_ correo: String) -> Bool {
-        let correoLimpio = correo.trimmingCharacters(in: .whitespacesAndNewlines)
         let patron = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"
-        return NSPredicate(format: "SELF MATCHES[c] %@", patron).evaluate(with: correoLimpio)
+        return NSPredicate(format: "SELF MATCHES[c] %@", patron).evaluate(with: correo)
     }
 }
 

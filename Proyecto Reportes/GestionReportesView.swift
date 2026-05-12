@@ -272,9 +272,8 @@ struct GestionReporteCardView: View {
                     .foregroundColor(.gray)
 
                 HStack(spacing: 8) {
-                     ForEach(estatusOpciones, id: \.self) { opcion in
-                         Button(action: {
-                             guard estatusSeleccionado != opcion else { return }
+                    ForEach(estatusOpciones, id: \.self) { opcion in
+                        Button(action: {
                              estatusSeleccionado = opcion
                              onCambiarEstatus(opcion)
                          }) {
