@@ -133,14 +133,14 @@ struct GestionReportesView: View {
         let actualizado = DatabaseManager.shared.actualizarEstatusReporte(id: reporte.id, nuevoEstatus: nuevoEstatus)
         if actualizado {
             cargarReportes()
-            enviarCorreoCambioEstatus(reporte: reporte, nuevoEstatus: nuevoEstatus)
+            sendStatusChangeEmail(reporte: reporte, nuevoEstatus: nuevoEstatus)
         } else {
             mensajeAlerta = "No se pudo actualizar el estatus."
             mostrarAlerta = true
         }
     }
 
-    func enviarCorreoCambioEstatus(reporte: Reporte, nuevoEstatus: String) {
+    func sendStatusChangeEmail(reporte: Reporte, nuevoEstatus: String) {
         guard let correoDestino = DatabaseManager.shared.obtenerCorreoDeReporte(id: reporte.id),
               !correoDestino.isEmpty else {
             mensajeAlerta = "El estatus se actualizó, pero el reporte no tiene un correo asociado."
@@ -166,7 +166,7 @@ struct GestionReportesView: View {
         Equipo REPORTEC
         """
 
-        guard let mailto = construirURLCorreo(destinatario: correoDestino, asunto: asunto, cuerpo: cuerpo) else {
+        guard let mailto = buildEmailURL(recipient: correoDestino, subject: asunto, body: cuerpo) else {
             mensajeAlerta = "No se pudo preparar el correo para el estudiante."
             mostrarAlerta = true
             return
@@ -180,13 +180,13 @@ struct GestionReportesView: View {
         }
     }
 
-    func construirURLCorreo(destinatario: String, asunto: String, cuerpo: String) -> URL? {
+    func buildEmailURL(recipient: String, subject: String, body: String) -> URL? {
         var components = URLComponents()
         components.scheme = "mailto"
-        components.path = destinatario
+        components.path = recipient
         components.queryItems = [
-            URLQueryItem(name: "subject", value: asunto),
-            URLQueryItem(name: "body", value: cuerpo)
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body)
         ]
         return components.url
     }

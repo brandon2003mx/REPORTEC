@@ -35,8 +35,8 @@ struct MensajeChat: Identifiable {
 
 enum ValidadorCorreo {
     static func esValido(_ correo: String) -> Bool {
-        let patron = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-        return NSPredicate(format: "SELF MATCHES %@", patron).evaluate(with: correo)
+        let pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: correo)
     }
 }
 
@@ -164,18 +164,31 @@ class DatabaseManager {
     }
 
     private func actualizarVersionEsquema(_ version: Int) {
-        execute(query: "PRAGMA user_version = \(version);")
+        let query: String
+
+        switch version {
+        case 0:
+            query = "PRAGMA user_version = 0;"
+        case 1:
+            query = "PRAGMA user_version = 1;"
+        default:
+            return
+        }
+
+        execute(query: query)
     }
 
     private func agregarColumnaTextoSiNoExiste(tabla: String, columna: String) {
         guard esIdentificadorSQLSeguro(tabla),
               esIdentificadorSQLSeguro(columna) else { return }
 
-        let query = "PRAGMA table_info(\(tabla));"
+        guard let pragmaQuery = consultaTableInfo(tabla: tabla),
+              let alterQuery = consultaAgregarColumnaTexto(tabla: tabla, columna: columna) else { return }
+
         var statement: OpaquePointer?
         var existeColumna = false
 
-        if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, pragmaQuery, -1, &statement, nil) == SQLITE_OK {
             while sqlite3_step(statement) == SQLITE_ROW {
                 let nombreColumna = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
                 if nombreColumna == columna {
@@ -188,12 +201,34 @@ class DatabaseManager {
         sqlite3_finalize(statement)
 
         guard !existeColumna else { return }
-        execute(query: "ALTER TABLE \(tabla) ADD COLUMN \(columna) TEXT;")
+        execute(query: alterQuery)
     }
 
     private func esIdentificadorSQLSeguro(_ valor: String) -> Bool {
         let permitidos = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
         return !valor.isEmpty && valor.unicodeScalars.allSatisfy { permitidos.contains($0) }
+    }
+
+    private func consultaTableInfo(tabla: String) -> String? {
+        switch tabla {
+        case "usuarios":
+            return "PRAGMA table_info(usuarios);"
+        case "reportes":
+            return "PRAGMA table_info(reportes);"
+        default:
+            return nil
+        }
+    }
+
+    private func consultaAgregarColumnaTexto(tabla: String, columna: String) -> String? {
+        switch (tabla, columna) {
+        case ("usuarios", "correo"):
+            return "ALTER TABLE usuarios ADD COLUMN correo TEXT;"
+        case ("reportes", "numeroControl"):
+            return "ALTER TABLE reportes ADD COLUMN numeroControl TEXT;"
+        default:
+            return nil
+        }
     }
     
     // MARK: - Insertar responsables por defecto
