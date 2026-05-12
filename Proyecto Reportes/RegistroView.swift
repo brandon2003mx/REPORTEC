@@ -149,13 +149,16 @@ struct RegistroView: View {
     }
     
     func registrar() {
-        guard !numeroControl.isEmpty, !correo.isEmpty, !contrasena.isEmpty, !confirmarContrasena.isEmpty else {
+        let numeroControlLimpio = numeroControl.trimmingCharacters(in: .whitespacesAndNewlines)
+        let correoLimpio = correo.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !numeroControlLimpio.isEmpty, !correoLimpio.isEmpty, !contrasena.isEmpty, !confirmarContrasena.isEmpty else {
             mensajeAlerta = "Por favor llena todos los campos."
             mostrarAlerta = true
             return
         }
         
-        guard correoEsValido(correo) else {
+        guard correoEsValido(correoLimpio) else {
             mensajeAlerta = "Ingresa un correo electrónico válido."
             mostrarAlerta = true
             return
@@ -168,8 +171,8 @@ struct RegistroView: View {
         }
         
         let exito = DatabaseManager.shared.registrarUsuario(
-            numeroControl: numeroControl,
-            correo: correo,
+            numeroControl: numeroControlLimpio,
+            correo: correoLimpio,
             contrasena: contrasena
         )
         
@@ -177,7 +180,7 @@ struct RegistroView: View {
             mensajeAlerta = "Usuario registrado correctamente."
             registroExitoso = true
         } else {
-            mensajeAlerta = "El número de control ya está registrado."
+            mensajeAlerta = "El número de control o correo ya está registrado."
             registroExitoso = false
         }
         mostrarAlerta = true
