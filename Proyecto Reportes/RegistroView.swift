@@ -158,7 +158,7 @@ struct RegistroView: View {
             return
         }
         
-        guard ValidadorCorreo.esValido(correoLimpio) else {
+        guard EmailValidator.esValido(correoLimpio) else {
             mensajeAlerta = "Ingresa un correo electrónico válido."
             mostrarAlerta = true
             return

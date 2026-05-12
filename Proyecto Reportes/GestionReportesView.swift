@@ -148,7 +148,7 @@ struct GestionReportesView: View {
             return
         }
 
-        guard ValidadorCorreo.esValido(correoDestino) else {
+        guard EmailValidator.esValido(correoDestino) else {
             mensajeAlerta = "El estatus se actualizó, pero el correo del estudiante no es válido."
             mostrarAlerta = true
             return
@@ -166,7 +166,7 @@ struct GestionReportesView: View {
         Equipo REPORTEC
         """
 
-        guard let mailto = buildEmailURL(recipient: correoDestino, subject: asunto, body: cuerpo) else {
+        guard let mailto = makeEmailURL(recipient: correoDestino, subject: asunto, body: cuerpo) else {
             mensajeAlerta = "No se pudo preparar el correo para el estudiante."
             mostrarAlerta = true
             return
@@ -180,7 +180,7 @@ struct GestionReportesView: View {
         }
     }
 
-    func buildEmailURL(recipient: String, subject: String, body: String) -> URL? {
+    func makeEmailURL(recipient: String, subject: String, body: String) -> URL? {
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = recipient

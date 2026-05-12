@@ -33,7 +33,7 @@ struct MensajeChat: Identifiable {
     var leido: Bool
 }
 
-enum ValidadorCorreo {
+enum EmailValidator {
     static func esValido(_ correo: String) -> Bool {
         let pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
         return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: correo)
@@ -117,7 +117,6 @@ class DatabaseManager {
         execute(query: tablaResponsables)
         execute(query: tablaMensajes)
         migrarBaseDeDatosSiEsNecesario()
-        execute(query: "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo ON usuarios(correo);")
         insertarResponsablesDefecto()
     }
     
@@ -147,6 +146,7 @@ class DatabaseManager {
         if versionActual < 1 {
             agregarColumnaTextoSiNoExiste(tabla: "usuarios", columna: "correo")
             agregarColumnaTextoSiNoExiste(tabla: "reportes", columna: "numeroControl")
+            execute(query: "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo ON usuarios(correo);")
             actualizarVersionEsquema(1)
         }
     }
@@ -168,8 +168,6 @@ class DatabaseManager {
         let query: String
 
         switch version {
-        case 0:
-            query = "PRAGMA user_version = 0;"
         case 1:
             query = "PRAGMA user_version = 1;"
         default:
