@@ -153,6 +153,12 @@ struct GestionReportesView: View {
             return
         }
 
+        guard EmailService.estaConfigurado else {
+            mensajeAlerta = "Estatus actualizado. El correo automático está desactivado porque el servicio no está configurado."
+            mostrarAlerta = true
+            return
+        }
+
         let asunto = "Actualización de reporte #\(reporte.id)"
         let cuerpo = """
         Hola,
