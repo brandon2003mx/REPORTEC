@@ -280,9 +280,9 @@ struct GestionReporteCardView: View {
                 HStack(spacing: 8) {
                     ForEach(estatusOpciones, id: \.self) { opcion in
                         Button(action: {
-                             estatusSeleccionado = opcion
-                             onCambiarEstatus(opcion)
-                         }) {
+                            estatusSeleccionado = opcion
+                            onCambiarEstatus(opcion)
+                        }) {
                             Text(opcion)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(estatusSeleccionado == opcion ? .white : Color(red: 0.10, green: 0.08, blue: 0.85))

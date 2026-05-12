@@ -117,6 +117,7 @@ class DatabaseManager {
         execute(query: tablaResponsables)
         execute(query: tablaMensajes)
         migrarBaseDeDatosSiEsNecesario()
+        execute(query: "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo ON usuarios(correo);")
         insertarResponsablesDefecto()
     }
     
