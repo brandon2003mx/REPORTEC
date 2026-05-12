@@ -225,10 +225,12 @@ struct ChatView2: View {
             estadoChat = .esperandoDescripcion
         } else if estadoChat == .esperandoDescripcion {
             descripcionEnviada = trimmed
+            guard let numeroControl = SessionManager.shared.numeroControlActual else { return }
             if let folio = DatabaseManager.shared.insertarReporte(
                 tipo: tipoIncidencia,
                 ubicacion: ubicacionEnviada,
-                descripcion: trimmed
+                descripcion: trimmed,
+                numeroControl: numeroControl
             ) {
                 // Guardar la conversación completa en el historial del reporte
                 let db = DatabaseManager.shared

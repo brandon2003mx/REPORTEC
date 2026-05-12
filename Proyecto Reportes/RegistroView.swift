@@ -5,6 +5,7 @@ struct RegistroView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var numeroControl = ""
+    @State private var correo = ""
     @State private var contrasena = ""
     @State private var confirmarContrasena = ""
     
@@ -76,6 +77,20 @@ struct RegistroView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
+                            Text("Correo electrónico")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
+                            
+                            TextField("Ej. alumno@tecnm.mx", text: $correo)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(18)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Contraseña")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
@@ -134,8 +149,14 @@ struct RegistroView: View {
     }
     
     func registrar() {
-        guard !numeroControl.isEmpty, !contrasena.isEmpty, !confirmarContrasena.isEmpty else {
+        guard !numeroControl.isEmpty, !correo.isEmpty, !contrasena.isEmpty, !confirmarContrasena.isEmpty else {
             mensajeAlerta = "Por favor llena todos los campos."
+            mostrarAlerta = true
+            return
+        }
+        
+        guard correoEsValido(correo) else {
+            mensajeAlerta = "Ingresa un correo electrónico válido."
             mostrarAlerta = true
             return
         }
@@ -148,6 +169,7 @@ struct RegistroView: View {
         
         let exito = DatabaseManager.shared.registrarUsuario(
             numeroControl: numeroControl,
+            correo: correo,
             contrasena: contrasena
         )
         
@@ -160,6 +182,12 @@ struct RegistroView: View {
         }
         mostrarAlerta = true
     }
+
+    func correoEsValido(_ correo: String) -> Bool {
+        let correoLimpio = correo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let patron = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"
+        return NSPredicate(format: "SELF MATCHES[c] %@", patron).evaluate(with: correoLimpio)
+    }
 }
 
 #Preview {
@@ -167,4 +195,3 @@ struct RegistroView: View {
         RegistroView()
     }
 }
-

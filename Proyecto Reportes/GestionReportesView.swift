@@ -3,6 +3,7 @@ import SwiftUI
 struct GestionReportesView: View {
 
     @Environment(\.dismiss) var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var reportes: [Reporte] = []
     @State private var mostrarAlerta = false
     @State private var mensajeAlerta = ""
@@ -127,13 +128,61 @@ struct GestionReportesView: View {
     }
 
     func cambiarEstatus(reporte: Reporte, nuevoEstatus: String) {
+        guard reporte.estatus != nuevoEstatus else { return }
+
         let actualizado = DatabaseManager.shared.actualizarEstatusReporte(id: reporte.id, nuevoEstatus: nuevoEstatus)
         if actualizado {
             cargarReportes()
+            enviarCorreoCambioEstatus(reporte: reporte, nuevoEstatus: nuevoEstatus)
         } else {
             mensajeAlerta = "No se pudo actualizar el estatus."
             mostrarAlerta = true
         }
+    }
+
+    func enviarCorreoCambioEstatus(reporte: Reporte, nuevoEstatus: String) {
+        guard let correoDestino = DatabaseManager.shared.obtenerCorreoDeReporte(id: reporte.id),
+              !correoDestino.isEmpty else {
+            mensajeAlerta = "El estatus se actualizó, pero el reporte no tiene un correo asociado."
+            mostrarAlerta = true
+            return
+        }
+
+        let asunto = "Actualización de reporte #\(reporte.id)"
+        let cuerpo = """
+        Hola,
+
+        El estatus de tu reporte #\(reporte.id) cambió a: \(nuevoEstatus).
+
+        Tipo: \(reporte.tipo)
+        Ubicación: \(reporte.ubicacion)
+
+        Equipo REPORTEC
+        """
+
+        guard let mailto = construirURLCorreo(destinatario: correoDestino, asunto: asunto, cuerpo: cuerpo) else {
+            mensajeAlerta = "No se pudo preparar el correo para el estudiante."
+            mostrarAlerta = true
+            return
+        }
+
+        openURL(mailto) { aceptado in
+            if !aceptado {
+                mensajeAlerta = "No se pudo abrir la aplicación de correo."
+                mostrarAlerta = true
+            }
+        }
+    }
+
+    func construirURLCorreo(destinatario: String, asunto: String, cuerpo: String) -> URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = destinatario
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: asunto),
+            URLQueryItem(name: "body", value: cuerpo)
+        ]
+        return components.url
     }
 }
 
@@ -223,11 +272,12 @@ struct GestionReporteCardView: View {
                     .foregroundColor(.gray)
 
                 HStack(spacing: 8) {
-                    ForEach(estatusOpciones, id: \.self) { opcion in
-                        Button(action: {
-                            estatusSeleccionado = opcion
-                            onCambiarEstatus(opcion)
-                        }) {
+                     ForEach(estatusOpciones, id: \.self) { opcion in
+                         Button(action: {
+                             guard estatusSeleccionado != opcion else { return }
+                             estatusSeleccionado = opcion
+                             onCambiarEstatus(opcion)
+                         }) {
                             Text(opcion)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(estatusSeleccionado == opcion ? .white : Color(red: 0.10, green: 0.08, blue: 0.85))

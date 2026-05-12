@@ -123,6 +123,7 @@ struct ContentView: View {
         )
         
         if loginCorrecto {
+            SessionManager.shared.iniciarSesion(numeroControl: numeroControl)
             irAlChat = true
         } else {
             mensajeAlerta = "Número de control o contraseña incorrectos."
