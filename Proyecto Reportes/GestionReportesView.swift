@@ -3,7 +3,6 @@ import SwiftUI
 struct GestionReportesView: View {
 
     @Environment(\.dismiss) var dismiss
-    @Environment(\.openURL) private var openURL
     @State private var reportes: [Reporte] = []
     @State private var mostrarAlerta = false
     @State private var mensajeAlerta = ""
@@ -154,41 +153,18 @@ struct GestionReportesView: View {
             return
         }
 
-        let asunto = "Actualización de reporte #\(reporte.id)"
-        let cuerpo = """
-        Hola,
-
-        El estatus de tu reporte #\(reporte.id) cambió a: \(nuevoEstatus).
-
-        Tipo: \(reporte.tipo)
-        Ubicación: \(reporte.ubicacion)
-
-        Equipo REPORTEC
-        """
-
-        guard let mailto = makeEmailURL(recipient: correoDestino, subject: asunto, body: cuerpo) else {
-            mensajeAlerta = "No se pudo preparar el correo para el estudiante."
-            mostrarAlerta = true
-            return
-        }
-
-        openURL(mailto) { aceptado in
-            if !aceptado {
-                mensajeAlerta = "No se pudo abrir la aplicación de correo."
+        CorreoManager.shared.enviarNotificacionEstatus(
+            destinatario: correoDestino,
+            reporteId: reporte.id,
+            nuevoEstatus: nuevoEstatus,
+            tipo: reporte.tipo,
+            ubicacion: reporte.ubicacion
+        ) { enviado, errorMsg in
+            if !enviado {
+                mensajeAlerta = errorMsg ?? "No se pudo enviar el correo de notificación."
                 mostrarAlerta = true
             }
         }
-    }
-
-    func makeEmailURL(recipient: String, subject: String, body: String) -> URL? {
-        var components = URLComponents()
-        components.scheme = "mailto"
-        components.path = recipient
-        components.queryItems = [
-            URLQueryItem(name: "subject", value: subject),
-            URLQueryItem(name: "body", value: body)
-        ]
-        return components.url
     }
 }
 
