@@ -148,7 +148,7 @@ struct GestionReportesView: View {
             return
         }
 
-        guard correoEsValido(correoDestino) else {
+        guard ValidadorCorreo.esValido(correoDestino) else {
             mensajeAlerta = "El estatus se actualizó, pero el correo del estudiante no es válido."
             mostrarAlerta = true
             return
@@ -189,11 +189,6 @@ struct GestionReportesView: View {
             URLQueryItem(name: "body", value: cuerpo)
         ]
         return components.url
-    }
-
-    func correoEsValido(_ correo: String) -> Bool {
-        let patron = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-        return NSPredicate(format: "SELF MATCHES %@", patron).evaluate(with: correo)
     }
 }
 

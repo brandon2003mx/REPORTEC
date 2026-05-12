@@ -126,6 +126,7 @@ struct ContentView: View {
             SessionManager.shared.iniciarSesion(numeroControl: numeroControl)
             irAlChat = true
         } else {
+            SessionManager.shared.cerrarSesion()
             mensajeAlerta = "Número de control o contraseña incorrectos."
             mostrarAlerta = true
         }

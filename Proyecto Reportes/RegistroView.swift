@@ -158,7 +158,7 @@ struct RegistroView: View {
             return
         }
         
-        guard correoEsValido(correoLimpio) else {
+        guard ValidadorCorreo.esValido(correoLimpio) else {
             mensajeAlerta = "Ingresa un correo electrónico válido."
             mostrarAlerta = true
             return
@@ -184,11 +184,6 @@ struct RegistroView: View {
             registroExitoso = false
         }
         mostrarAlerta = true
-    }
-
-    func correoEsValido(_ correo: String) -> Bool {
-        let patron = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-        return NSPredicate(format: "SELF MATCHES %@", patron).evaluate(with: correo)
     }
 }
 

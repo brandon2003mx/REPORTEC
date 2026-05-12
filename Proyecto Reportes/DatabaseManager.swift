@@ -33,6 +33,13 @@ struct MensajeChat: Identifiable {
     var leido: Bool
 }
 
+enum ValidadorCorreo {
+    static func esValido(_ correo: String) -> Bool {
+        let patron = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        return NSPredicate(format: "SELF MATCHES %@", patron).evaluate(with: correo)
+    }
+}
+
 class DatabaseManager {
     
     static let shared = DatabaseManager()
@@ -245,15 +252,15 @@ class DatabaseManager {
     // MARK: - Registrar usuario
     
     func registrarUsuario(numeroControl: String, correo: String, contrasena: String) -> Bool {
-        let query = "INSERT INTO usuarios (numeroControl, contrasena, correo) VALUES (?, ?, ?);"
+        let query = "INSERT INTO usuarios (numeroControl, correo, contrasena) VALUES (?, ?, ?);"
         var statement: OpaquePointer?
         var registrado = false
         
         if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
             
             sqlite3_bind_text(statement, 1, (numeroControl as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(statement, 2, (contrasena as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(statement, 3, (correo as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 2, (correo as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 3, (contrasena as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
                 print("Usuario registrado correctamente")
@@ -718,11 +725,24 @@ class DatabaseManager {
 final class SessionManager {
     static let shared = SessionManager()
 
-    private(set) var numeroControlActual: String?
+    private let queue = DispatchQueue(label: "SessionManager.queue")
+    private var _numeroControlActual: String?
 
     private init() {}
 
+    var numeroControlActual: String? {
+        queue.sync { _numeroControlActual }
+    }
+
     func iniciarSesion(numeroControl: String) {
-        numeroControlActual = numeroControl
+        queue.sync {
+            _numeroControlActual = numeroControl
+        }
+    }
+
+    func cerrarSesion() {
+        queue.sync {
+            _numeroControlActual = nil
+        }
     }
 }
