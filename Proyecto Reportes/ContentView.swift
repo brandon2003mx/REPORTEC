@@ -12,7 +12,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.0, green: 0.3, blue: 0.95)
+                Color(red: 0.10, green: 0.40, blue: 0.85)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 25) {

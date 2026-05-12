@@ -14,7 +14,7 @@ struct ResponsableLoginView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.0, green: 0.3, blue: 0.95)
+                Color(red: 0.10, green: 0.40, blue: 0.85)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -95,7 +95,7 @@ struct ResponsableLoginView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color(red: 0.12, green: 0.05, blue: 0.85))
+                                .background(Color(red: 0.10, green: 0.40, blue: 0.85))
                                 .cornerRadius(22)
                         }
                         .padding(.horizontal, 25)
