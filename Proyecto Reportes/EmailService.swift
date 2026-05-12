@@ -25,6 +25,12 @@ enum EmailJSConfig {
 
 enum EmailService {
 
+    static var estaConfigurado: Bool {
+        EmailJSConfig.serviceID  != "TU_SERVICE_ID" &&
+        EmailJSConfig.templateID != "TU_TEMPLATE_ID" &&
+        EmailJSConfig.publicKey  != "TU_PUBLIC_KEY"
+    }
+
     enum EmailError: Error, LocalizedError {
         case configurationMissing
         case invalidURL
@@ -57,9 +63,7 @@ enum EmailService {
         cuerpo: String,
         completion: @escaping (Result<Void, EmailError>) -> Void
     ) {
-        guard EmailJSConfig.serviceID  != "TU_SERVICE_ID",
-              EmailJSConfig.templateID != "TU_TEMPLATE_ID",
-              EmailJSConfig.publicKey  != "TU_PUBLIC_KEY" else {
+        guard estaConfigurado else {
             DispatchQueue.main.async { completion(.failure(.configurationMissing)) }
             return
         }

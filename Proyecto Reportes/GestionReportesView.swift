@@ -153,6 +153,12 @@ struct GestionReportesView: View {
             return
         }
 
+        guard EmailService.estaConfigurado else {
+            mensajeAlerta = "Estatus actualizado. Envío de correo omitido: servicio no configurado."
+            mostrarAlerta = true
+            return
+        }
+
         let asunto = "Actualización de reporte #\(reporte.id)"
         let cuerpo = """
         Hola,
