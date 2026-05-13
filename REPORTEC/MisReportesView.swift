@@ -141,7 +141,7 @@ struct MisReportesView: View {
     }
 
     func eliminarReporte(reporte: Reporte) {
-        DatabaseManager.shared.eliminarReporte(id: reporte.id)
+        _ = DatabaseManager.shared.eliminarReporte(id: reporte.id)
         reporteAEliminar = nil
         cargarReportes()
     }

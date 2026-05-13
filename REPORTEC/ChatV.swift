@@ -8,6 +8,11 @@ struct ChatView: View {
     @State private var tipoSeleccionado = ""
     @State private var mostrarError = false
 
+    private let fondoAzulPlano = Color(red: 0.0, green: 0.3, blue: 0.95)
+    private let panelColor = Color(red: 0.84, green: 0.90, blue: 0.97)
+    private let cardColor = Color(red: 0.90, green: 0.95, blue: 1.00)
+    private let accentBlue = Color(red: 0.12, green: 0.18, blue: 0.88)
+
     let opciones: [String: String] = [
         "1": "El clima no funciona (no está encendido)",
         "2": "Hace falta sillas",
@@ -18,123 +23,138 @@ struct ChatView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.0, green: 0.3, blue: 0.95)
+            fondoAzulPlano
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                VStack(spacing: 2) {
+                    Text("REPORTEC")
+                        .font(.system(size: 34, weight: .heavy))
+                        .foregroundColor(.white)
+                    Text("Asistente de Reportes")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.85))
+                }
+                .padding(.top, 30)
+                .padding(.bottom, 22)
 
-                Text("REPORTEC")
-                    .font(.system(size: 34, weight: .heavy))
-                    .foregroundColor(.white)
-                    .padding(.top, 30)
-                    .padding(.bottom, 25)
-
-                VStack(spacing: 20) {
-
-                    HStack(alignment: .center, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Bienvenido")
-                                .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.black.opacity(0.75))
-
-                            Text("¿Cómo te puedo ayudar?")
+                GeometryReader { _ in
+                    VStack(spacing: 12) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "sparkles.bubble")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.black.opacity(0.75))
-                        }
-                        Spacer()
-                        Button(action: { navegarAMisReportes = true }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "list.bullet.clipboard.fill")
-                                    .font(.system(size: 20))
-                                Text("Mis Reportes")
-                                    .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color(red: 0.07, green: 0.33, blue: 0.82))
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Bienvenido")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.black.opacity(0.74))
+                                Text("Selecciona la incidencia para continuar")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.black.opacity(0.55))
                             }
-                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .background(Color.white)
-                            .cornerRadius(14)
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+                            Spacer()
+
+                            Button(action: { navegarAMisReportes = true }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "list.bullet.clipboard.fill")
+                                        .font(.system(size: 14, weight: .bold))
+                                    Text("Mis Reportes")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(accentBlue)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                            }
                         }
-                    }
-                    .padding(.top, 25)
-                    .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.horizontal, 20)
 
-                    HStack {
-                        Text("•  Selecciona un número\ndependiendo la\nincidencia que detectas\ny se enviará al área\nencargada")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(width: 290, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color(red: 0.0, green: 0.3, blue: 0.95))
-                            )
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
+                        HStack {
+                            Text("Selecciona un número de incidencia y se enviará al área encargada.")
+                                .font(.system(size: 14))
+                                .foregroundColor(.black.opacity(0.78))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 14)
+                                .background(cardColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
+                                )
+                            Spacer()
+                        }
+                        .padding(.horizontal, 24)
 
-                    Image("mascota")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 220)
-                        .opacity(0.4)
-
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("1. El clima no funciona (No\n   está encendido)")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("1. El clima no funciona (No está encendido)")
                             Text("2. Hace falta sillas")
                             Text("3. Hay una fuga en el baño")
                             Text("4. No hay agua en el edificio")
-                            Text("5. No hay electricidad en el\n   edificio")
+                            Text("5. No hay electricidad en el edificio")
                         }
-                        .font(.system(size: 16))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: 310, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color(red: 0.0, green: 0.3, blue: 0.95))
+                            LinearGradient(
+                                colors: [Color(red: 0.12, green: 0.18, blue: 0.88), Color(red: 0.06, green: 0.11, blue: 0.66)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .padding(.horizontal, 24)
 
-                    Spacer()
+                        Image("mascota")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 100)
+                            .opacity(0.3)
 
-                    if mostrarError {
-                        Text("Por favor ingresa un número válido del 1 al 5.")
-                            .foregroundColor(.red)
-                            .font(.system(size: 14, weight: .semibold))
-                            .padding(.horizontal, 20)
-                    }
-
-                    HStack(spacing: 12) {
-                        TextField("Ingresa el número relacionado con la incidencia.....", text: $numeroIncidencia)
-                            .keyboardType(.numberPad)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(20)
-
-                        Button(action: {
-                            enviarNumero()
-                        }) {
-                            Image(systemName: "paperplane.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.white)
-                                .frame(width: 55, height: 55)
-                                .background(Color.black)
-                                .clipShape(Circle())
+                        if mostrarError {
+                            Text("Por favor ingresa un número válido del 1 al 5.")
+                                .foregroundColor(.red)
+                                .font(.system(size: 13, weight: .semibold))
+                                .padding(.horizontal, 20)
                         }
+
+                        Spacer(minLength: 0)
+
+                        HStack(spacing: 10) {
+                            TextField("Ingresa el número de incidencia...", text: $numeroIncidencia)
+                                .keyboardType(.numberPad)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                            Button(action: { enviarNumero() }) {
+                                Image(systemName: "paperplane.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 48, height: 48)
+                                    .background(Color.black)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 4)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 14)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 25)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(panelColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 42, style: .continuous)
+                            .stroke(Color.white.opacity(0.32), lineWidth: 1)
+                    )
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(red: 0.90, green: 0.90, blue: 0.95))
-                .clipShape(
-                    RoundedRectangle(cornerRadius: 45, style: .continuous)
-                )
                 .padding(.horizontal, 8)
             }
         }

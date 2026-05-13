@@ -64,70 +64,100 @@ struct ChatView2: View {
                 .padding(.top, 30)
                 .padding(.bottom, 22)
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 14) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "sparkles.bubble")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.07, green: 0.33, blue: 0.82))
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Bienvenido")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.black.opacity(0.74))
-                                    Text("Vamos a registrar tu reporte paso a paso")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.black.opacity(0.55))
+                VStack(spacing: 0) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 14) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "sparkles.bubble")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.07, green: 0.33, blue: 0.82))
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Bienvenido")
+                                            .font(.system(size: 24, weight: .bold))
+                                            .foregroundColor(.black.opacity(0.74))
+                                        Text("Vamos a registrar tu reporte paso a paso")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.black.opacity(0.55))
+                                    }
+                                    Spacer()
                                 }
-                                Spacer()
-                            }
-                            .padding(.top, 22)
-                            .padding(.horizontal, 20)
-
-                            ChatBubbleUsuario(texto: tipoIncidencia, start: userBubbleStart, end: userBubbleEnd)
+                                .padding(.top, 22)
                                 .padding(.horizontal, 20)
 
-                            ChatBubbleBot(
-                                texto: "Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPrimero dime la ubicación exacta (edificio / salón o área).",
-                                color: botBubbleColor
-                            )
-                            .padding(.horizontal, 20)
-
-                            if !ubicacionEnviada.isEmpty {
-                                ChatBubbleUsuario(texto: ubicacionEnviada, start: userBubbleStart, end: userBubbleEnd)
+                                ChatBubbleUsuario(texto: tipoIncidencia, start: userBubbleStart, end: userBubbleEnd)
                                     .padding(.horizontal, 20)
 
                                 ChatBubbleBot(
-                                    texto: "Gracias. Ahora dime, ¿qué notas? (descripción del problema)",
+                                    texto: "Entendido. Vas a reportar:\n\"\(tipoIncidencia)\".\n\nPrimero dime la ubicación exacta (edificio / salón o área).",
                                     color: botBubbleColor
                                 )
                                 .padding(.horizontal, 20)
-                            }
 
-                            if !descripcionEnviada.isEmpty {
-                                ChatBubbleUsuario(texto: descripcionEnviada, start: userBubbleStart, end: userBubbleEnd)
-                                    .padding(.horizontal, 20)
+                                if !ubicacionEnviada.isEmpty {
+                                    ChatBubbleUsuario(texto: ubicacionEnviada, start: userBubbleStart, end: userBubbleEnd)
+                                        .padding(.horizontal, 20)
 
-                                if case .reporteCreado(let folio) = estadoChat {
                                     ChatBubbleBot(
-                                        texto: "✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(descripcionEnviada)\n• Área asignada: \(areaAsignada)\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.",
+                                        texto: "Gracias. Ahora dime, ¿qué notas? (descripción del problema)",
                                         color: botBubbleColor
                                     )
                                     .padding(.horizontal, 20)
-                                    .id("confirmacion")
                                 }
-                            }
 
-                            Color.clear
-                                .frame(height: 1)
-                                .id("bottom")
+                                if !descripcionEnviada.isEmpty {
+                                    ChatBubbleUsuario(texto: descripcionEnviada, start: userBubbleStart, end: userBubbleEnd)
+                                        .padding(.horizontal, 20)
+
+                                    if case .reporteCreado(let folio) = estadoChat {
+                                        ChatBubbleBot(
+                                            texto: "✅ Reporte creado con folio #\(folio).\n\n• Tipo: \(tipoIncidencia)\n• Ubicación: \(ubicacionEnviada)\n• Descripción: \(descripcionEnviada)\n• Área asignada: \(areaAsignada)\n• Prioridad: Media\n\nEstatus actual: NUEVO (recibido)\nTe avisaremos por este chat cuando haya cambios.",
+                                            color: botBubbleColor
+                                        )
+                                        .padding(.horizontal, 20)
+                                        .id("confirmacion")
+                                    }
+                                }
+
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id("bottom")
+                            }
+                            .padding(.bottom, 14)
                         }
-                        .padding(.bottom, 14)
+                        .onChange(of: estadoChat) {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                proxy.scrollTo("bottom", anchor: .bottom)
+                            }
+                        }
                     }
-                    .onChange(of: estadoChat) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            proxy.scrollTo("bottom", anchor: .bottom)
+
+                    if estadoChat == .esperandoUbicacion || estadoChat == .esperandoDescripcion {
+                        HStack(spacing: 10) {
+                            TextField(
+                                estadoChat == .esperandoUbicacion
+                                    ? "Escribe la ubicación (edificio / salón o área)..."
+                                    : "Escribe la descripción del problema...",
+                                text: $mensaje
+                            )
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                            Button(action: { enviarMensaje() }) {
+                                Image(systemName: "paperplane.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 48, height: 48)
+                                    .background(Color.black)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 4)
+                            }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
+                        .padding(.bottom, 14)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -138,33 +168,6 @@ struct ChatView2: View {
                         .stroke(Color.white.opacity(0.32), lineWidth: 1)
                 )
                 .padding(.horizontal, 8)
-
-                if estadoChat == .esperandoUbicacion || estadoChat == .esperandoDescripcion {
-                    HStack(spacing: 10) {
-                        TextField(
-                            estadoChat == .esperandoUbicacion
-                                ? "Escribe la ubicación (edificio / salón o área)..."
-                                : "Escribe la descripción del problema...",
-                            text: $mensaje
-                        )
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                        Button(action: { enviarMensaje() }) {
-                            Image(systemName: "paperplane.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 48, height: 48)
-                                .background(Color.black)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.22), radius: 6, x: 0, y: 4)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
-                }
             }
         }
         .navigationBarBackButtonHidden(true)

@@ -18,8 +18,6 @@ struct ResponsableLoginView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-
-                    // Encabezado
                     ZStack {
                         Text("REPORTEC")
                             .font(.system(size: 34, weight: .heavy))
@@ -39,69 +37,68 @@ struct ResponsableLoginView: View {
                         .padding(.horizontal)
                     }
                     .padding(.top, 35)
-                    .padding(.bottom, 35)
+                    .padding(.bottom, 20)
 
-                    // Contenido
-                    VStack(spacing: 25) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 25) {
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.badge.key.fill")
+                                    .font(.system(size: 55))
+                                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
+                                    .padding(.top, 20)
 
-                        VStack(spacing: 8) {
-                            Image(systemName: "person.badge.key.fill")
-                                .font(.system(size: 55))
-                                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.85))
-                                .padding(.top, 30)
-
-                            Text("Acceso Responsable")
-                                .font(.system(size: 26, weight: .bold))
-                                .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
-
-                            Text("Ingresa tus credenciales")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.gray)
-                        }
-
-                        VStack(spacing: 18) {
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Usuario")
-                                    .font(.system(size: 15, weight: .semibold))
+                                Text("Acceso Responsable")
+                                    .font(.system(size: 26, weight: .bold))
                                     .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
 
-                                TextField("Nombre de usuario", text: $usuario)
-                                    .autocapitalization(.none)
-                                    .disableAutocorrection(true)
-                                    .padding()
-                                    .background(Color.white)
-                                    .cornerRadius(18)
+                                Text("Ingresa tus credenciales")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(.gray)
                             }
 
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Contraseña")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
+                            VStack(spacing: 18) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Usuario")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
 
-                                SecureField("Contraseña", text: $contrasena)
-                                    .padding()
-                                    .background(Color.white)
-                                    .cornerRadius(18)
+                                    TextField("Nombre de usuario", text: $usuario)
+                                        .autocapitalization(.none)
+                                        .disableAutocorrection(true)
+                                        .padding()
+                                        .background(Color.white)
+                                        .cornerRadius(18)
+                                }
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Contraseña")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.10, green: 0.25, blue: 0.30))
+
+                                    SecureField("Contraseña", text: $contrasena)
+                                        .padding()
+                                        .background(Color.white)
+                                        .cornerRadius(18)
+                                }
                             }
-                        }
-                        .padding(.horizontal, 25)
+                            .padding(.horizontal, 25)
 
-                        Button {
-                            iniciarSesion()
-                        } label: {
-                            Text("Iniciar Sesión")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color(red: 0.10, green: 0.40, blue: 0.85))
-                                .cornerRadius(22)
+                            Button {
+                                iniciarSesion()
+                            } label: {
+                                Text("Iniciar Sesión")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color(red: 0.10, green: 0.40, blue: 0.85))
+                                    .cornerRadius(22)
+                            }
+                            .padding(.horizontal, 25)
+                            .padding(.top, 5)
+                            .padding(.bottom, 24)
                         }
-                        .padding(.horizontal, 25)
-                        .padding(.top, 5)
-
-                        Spacer()
+                        .frame(maxWidth: .infinity)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(red: 0.86, green: 0.90, blue: 0.93))

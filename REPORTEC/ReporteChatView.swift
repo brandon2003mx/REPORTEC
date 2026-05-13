@@ -119,7 +119,7 @@ struct ReporteChatView: View {
                             proxy.scrollTo("bottom", anchor: .bottom)
                         }
                     }
-                    .onChange(of: mensajes.count) { _ in
+                    .onChange(of: mensajes.count) {
                         withAnimation {
                             proxy.scrollTo("bottom", anchor: .bottom)
                         }
